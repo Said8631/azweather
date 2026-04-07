@@ -4,7 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Wind, Droplets, Thermometer, Gauge, Calendar, MapPin, Menu, X, Sun, Moon } from 'lucide-react';
 import Globe from 'react-globe.gl';
 
-const API_KEY = '7cc46ea2b0b831627a376350da06f3bf';
+const API_KEY = import.meta.env.VITE_WEATHER_API_KEY || '7cc46ea2b0b831627a376350da06f3bf';
+
+const StatBox = ({ icon, label, value }) => (
+  <div className="stat-box">
+    <div className="stat-label">
+      {icon}
+      <span>{label}</span>
+    </div>
+    <span className="stat-value">{value}</span>
+  </div>
+);
 
 const App = () => {
   const [city, setCity] = useState('Baku');
@@ -26,22 +36,26 @@ const App = () => {
       const weatherRes = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&units=metric&appid=${API_KEY}&lang=az`);
       const forecastRes = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(cityName)}&units=metric&appid=${API_KEY}&lang=az`);
       
-      const { lat, lon } = weatherRes.data.coord;
+      const lat = weatherRes.data?.coord?.lat;
+      const lon = weatherRes.data?.coord?.lon;
+      
       setWeather(weatherRes.data);
       if (forecastRes.data && forecastRes.data.list) {
         setForecast(forecastRes.data.list.filter(item => item.dt_txt.includes("12:00:00")).slice(0, 5));
       }
 
       // Update Globe markers
-      setRings([{ lat, lng: lon, maxR: 5, propagationSpeed: 2, repeatPeriod: 1000 }]);
-      setLabels([{ lat, lng: lon, text: cityName.charAt(0).toUpperCase() + cityName.slice(1), size: 2, dotRadius: 0.5 }]);
-      
-      if (globeEl.current) {
-        globeEl.current.pointOfView({
-          lat: lat,
-          lng: lon,
-          altitude: 1.5
-        }, 2000);
+      if (lat != null && lon != null) {
+        setRings([{ lat, lng: lon, maxR: 5, propagationSpeed: 2, repeatPeriod: 1000 }]);
+        setLabels([{ lat, lng: lon, text: cityName.charAt(0).toUpperCase() + cityName.slice(1), size: 2, dotRadius: 0.5 }]);
+        
+        if (globeEl.current) {
+          globeEl.current.pointOfView({
+            lat: lat,
+            lng: lon,
+            altitude: 1.5
+          }, 2000);
+        }
       }
     } catch (error) {
 
@@ -158,7 +172,7 @@ const App = () => {
                   {/* Current Weather Main */}
                   <div className="weather-main">
                     <motion.div 
-                      key={weather.name}
+                      key={weather?.name}
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ duration: 0.5 }}
@@ -166,21 +180,21 @@ const App = () => {
                     >
                       <div className="location-info">
                         <MapPin size={20} className="text-primary" />
-                        <span>{weather.name}, {weather.sys.country}</span>
+                        <span>{weather?.name}, {weather?.sys?.country}</span>
                       </div>
                       <h1 className="main-temp glow-text">
-                        {Math.round(weather.main.temp)}°
+                        {weather?.main?.temp != null ? Math.round(weather.main.temp) : '--'}°
                       </h1>
-                      <p className="weather-desc">{weather.weather[0].description}</p>
+                      <p className="weather-desc">{weather?.weather?.[0]?.description}</p>
                     </motion.div>
                   </div>
 
                   {/* Weather Stats Grid */}
                   <div className="stats-grid">
-                    <StatBox icon={<Thermometer size={22} style={{ color: '#fb923c' }} />} label="Hiss edilən" value={`${Math.round(weather.main.feels_like)}°C`} />
-                    <StatBox icon={<Droplets size={22} style={{ color: '#60a5fa' }} />} label="Rütubət" value={`${weather.main.humidity}%`} />
-                    <StatBox icon={<Wind size={22} style={{ color: '#94a3b8' }} />} label="Külək" value={`${weather.wind.speed} km/s`} />
-                    <StatBox icon={<Gauge size={22} style={{ color: '#34d399' }} />} label="Təzyiq" value={`${weather.main.pressure} hPa`} />
+                    <StatBox icon={<Thermometer size={22} style={{ color: '#fb923c' }} />} label="Hiss edilən" value={weather?.main?.feels_like != null ? `${Math.round(weather.main.feels_like)}°C` : '--'} />
+                    <StatBox icon={<Droplets size={22} style={{ color: '#60a5fa' }} />} label="Rütubət" value={weather?.main?.humidity != null ? `${weather.main.humidity}%` : '--'} />
+                    <StatBox icon={<Wind size={22} style={{ color: '#94a3b8' }} />} label="Külək" value={weather?.wind?.speed != null ? `${weather.wind.speed} km/s` : '--'} />
+                    <StatBox icon={<Gauge size={22} style={{ color: '#34d399' }} />} label="Təzyiq" value={weather?.main?.pressure != null ? `${weather.main.pressure} hPa` : '--'} />
                   </div>
 
                   <hr className="separator" />
@@ -193,7 +207,7 @@ const App = () => {
                       <span>5-GÜNLÜK PROQNOZ</span>
                     </div>
                     <div className="forecast-list">
-                      {forecast.map((day, idx) => (
+                      {forecast?.map((day, idx) => (
                         <motion.div
                           key={day.dt}
                           initial={{ opacity: 0, x: -20 }}
@@ -205,13 +219,13 @@ const App = () => {
                             {new Date(day.dt * 1000).toLocaleDateString('az-AZ', { weekday: 'short' })}
                           </span>
                           <img 
-                            src={`https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`} 
+                            src={`https://openweathermap.org/img/wn/${day.weather?.[0]?.icon}@2x.png`} 
                             alt="icon"
                             className="forecast-icon"
                           />
                           <div className="forecast-temps">
-                            <span className="temp-max">{Math.round(day.main.temp_max)}°</span>
-                            <span className="temp-min">{Math.round(day.main.temp_min)}°</span>
+                            <span className="temp-max">{day.main?.temp_max != null ? Math.round(day.main.temp_max) : '--'}°</span>
+                            <span className="temp-min">{day.main?.temp_min != null ? Math.round(day.main.temp_min) : '--'}°</span>
                           </div>
                         </motion.div>
                       ))}
@@ -219,6 +233,7 @@ const App = () => {
                   </div>
                 </>
               )}
+
 
               {loading && (
                 <div className="flex flex-col items-center justify-center h-40">
@@ -238,15 +253,6 @@ const App = () => {
   );
 };
 
-const StatBox = ({ icon, label, value }) => (
-  <div className="stat-box">
-    <div className="stat-label">
-      {icon}
-      <span>{label}</span>
-    </div>
-    <span className="stat-value">{value}</span>
-  </div>
-);
 
 
 
