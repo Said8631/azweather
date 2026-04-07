@@ -383,4 +383,30 @@ body {
   
   .sidebar-container {
     width: 100%;
-    
+    padding: 16px;
+    height: auto;
+    bottom: 0;
+    top: auto;
+  }
+  
+  .sidebar-content {
+    border-radius: 30px;
+    height: 80vh;
+    padding: 24px;
+  }
+
+  .main-temp {
+    font-size: 5rem;
+  }
+
+  .theme-toggle {
+    top: 16px;
+    right: 16px;
+  }
+
+  .overlay-layer {
+    background: linear-gradient(to bottom, var(--bg-dark), transparent, var(--bg-dark));
+  }
+}
+
+
